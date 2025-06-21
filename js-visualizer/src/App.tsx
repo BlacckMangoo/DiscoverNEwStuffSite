@@ -1,6 +1,7 @@
 
 import './App.css'
 import Navbar from './components/Navbar'
+import CodeEditor from './components/CodeEditor'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable'
 
 function App() {
@@ -11,24 +12,18 @@ function App() {
       
       {/* Resizable split screen below navbar */}
       <div className="flex-1">
-        <ResizablePanelGroup direction="vertical" className="h-full">
-          {/* Top panel */}
-          <ResizablePanel defaultSize={50} minSize={20}>
-            <div className="p-4 h-full bg-gray-50">
-              <h2 className="text-lg font-medium mb-4">Top Panel</h2>
-              <p className="text-gray-600">This is the top section of your split screen.</p>
-            </div>
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Left panel */}
+          <ResizablePanel defaultSize={60} minSize={60} className='bg-gray-900'>
+           
           </ResizablePanel>
           
           {/* Resizable handle */}
-          <ResizableHandle withHandle />
+          <ResizableHandle  />
           
-          {/* Bottom panel */}
-          <ResizablePanel defaultSize={50} minSize={20}>
-            <div className="p-4 h-full bg-white">
-              <h2 className="text-lg font-medium mb-4">Bottom Panel</h2>
-              <p className="text-gray-600">This is the bottom section of your split screen.</p>
-            </div>
+          {/* Right panel */}
+          <ResizablePanel defaultSize={40} minSize={40} className='bg-gray-800'>
+            <CodeEditor />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
