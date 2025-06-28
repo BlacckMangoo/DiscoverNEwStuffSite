@@ -3,30 +3,52 @@ import Editor from '@monaco-editor/react';
 import type { Monaco } from '@monaco-editor/react';
 import { LuChevronRight, LuChevronLeft, LuCirclePlay } from "react-icons/lu";
 import { LuPlay } from 'react-icons/lu';
+import { useAst } from "@/hooks/useAst";
+import useCallStack from '@/hooks/useCallStack';
 
-
-
-
-
-
-const defaultCode = `function fibonacci(n) {
-  if (n <= 1) {
-    return n;
-  }
-  return fibonacci(n - 1) + fibonacci(n - 2);
+const defaultCode = `function a() {
+  b();
 }
-
-function main() {
-  const result = fibonacci(5);
-  console.log("Result:", result);
-  return result;
+function b() {
+  c();
 }
-
-main();`;
+function c() {
+  console.log("hi");
+}
+a();`;
 
 function CodeEditor() {
+  // ✅ Move hooks inside component
+  const { GenerateAndStoreAst, logAst } = useAst();
+  const { push, pop } = useCallStack();
+  
   const [code, setCode] = useState(defaultCode);
   const editorRef = useRef(null);
+
+  // ✅ Create proper async function for call stack sequence
+  const startCallStackSequence = async (operationLog: any[]) => {
+    console.log('🚀 Starting call stack sequence:', operationLog);
+    
+    for (let i = 0; i < operationLog.length; i++) {
+      const operation = operationLog[i];
+      
+      if (operation.type === 'push') {
+        console.log(`⬆️ PUSH: ${operation.functionName}`);
+        await push(operation.functionName);
+      } else if (operation.type === 'pop') {
+        console.log(`⬇️ POP: ${operation.functionName}`);
+        await pop();
+      }
+      
+      // ✅ Proper delay between operations
+      if (i < operationLog.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  };
+
+
+
 
 
  
@@ -82,10 +104,25 @@ function CodeEditor() {
 
     // Set the theme
     monaco.editor.setTheme('zinc-dark');
-  };  const handleRunCode = () => {
+  };  const handleRunCode = async () => {
+    const sourceCode = code;
 
-
-
+    try {
+      // ✅ Generate AST and get operations directly
+      const operationLog = GenerateAndStoreAst(sourceCode);
+      logAst();
+      
+      console.log('📋 Operation Log:', operationLog);
+      
+      // ✅ Start the call stack sequence with returned operations
+      if (operationLog && operationLog.length > 0) {
+        await startCallStackSequence(operationLog);
+      } else {
+        console.warn('⚠️ No call stack operations found');
+      }
+    } catch (error) {
+      console.error('Error generating AST:', error);
+    }
   };
 
   const handleStepBack = () => {
@@ -159,7 +196,7 @@ function CodeEditor() {
           height="100%"
           defaultLanguage="javascript"
           value={code}
-          onChange={(value) => setCode(value || '')}
+          onChange={(value) => setCode(value || '')      }
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: false },

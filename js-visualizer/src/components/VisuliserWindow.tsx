@@ -7,15 +7,21 @@ import {
 } from "@xyflow/react";
 import type { Connection } from "@xyflow/react";
 import { useCallback, useEffect } from "react";
+
 import "@xyflow/react/dist/style.css";
 import CallStackNode from "./CallStackNode";
 import CallStackBase from "./CallStackBase";
 import { useCallStackStore } from "../Store/CallStackStore";
 
+
+
 const nodeTypes = {
   callStackNode: CallStackNode,
   callStackBase: CallStackBase,
 };
+
+
+
 
 function VisualizerWindow() {
   // Get state and operations from CallStackStore
@@ -48,30 +54,7 @@ function VisualizerWindow() {
 
   return (
     <div style={{ width: "100%", height: "100%" }} className="relative">
-      <div className="absolute top-0 left-0 z-10 p-4 flex gap-2">
-        <button 
-          className="text-white bg-red-700 rounded-2xl px-4 py-2 w-20 hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
-          onClick={pop}
-          disabled={isEmpty()}
-        >
-          POP
-        </button>
-        <button 
-          className="text-white bg-green-700 rounded-2xl px-4 py-2 w-20 hover:bg-green-600 transition-colors" 
-          onClick={() => push("Function")}
-        >
-          PUSH
-        </button>
-        <button 
-          className="text-white bg-yellow-600 rounded-2xl px-4 py-2 hover:bg-yellow-500 transition-colors" 
-          onClick={clearStack}
-        >
-          CLEAR
-        </button>
-        <div className="text-white bg-blue-700 rounded-2xl px-4 py-2 text-sm flex items-center">
-          Stack Size: {noOfElementsInStack}
-        </div>
-      </div>
+      
       
       <ReactFlow
         nodes={reactFlowNodes}
