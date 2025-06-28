@@ -2,7 +2,7 @@
 
 import { Handle, Position } from '@xyflow/react';
 
-interface CallStackNodeProps {
+export interface CallStackNodeProps {
   data: {
     functionName?: string;
     isTop?: boolean; 
