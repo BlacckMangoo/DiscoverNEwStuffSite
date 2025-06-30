@@ -1,33 +1,40 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import type { VisualiserNode, VisualiserEdge } from './VisualiserStore';
+import { useVisualiserStore } from './VisualiserStore';
 
-interface CallStackNode {
-  id: string;
+/**
+ * Call Stack Store - Global State Management
+ * 
+ * This store handles:
+ * - Pure call stack logic and operations (push/pop)  
+ * - Function call tracking and stack state
+ * - Stack size and emptiness validation
+ * - Call stack execution flow control
+ * - Function name and call order management
+ * 
+ * Note: Uses VisualiserStore interfaces for consistency
+ */
+
+// Extend VisualiserNode with call stack specific data
+interface CallStackNodeData {
+  functionName?: string;
+  isTop?: boolean;
+  isBottom?: boolean;
+  isConnectable?: boolean;
+  title?: string;
+}
+
+interface CallStackNode extends Omit<VisualiserNode, 'type' | 'data'> {
   type: 'callStackNode' | 'callStackBase';
-  position: { x: number; y: number };
-  data: {
-    functionName?: string;
-    isTop?: boolean;
-    isBottom?: boolean;
-    isConnectable?: boolean;
-  };
-  zIndex: number;
-  draggable: boolean;
-  connectable: boolean;
+  data: CallStackNodeData;
 }
 
-interface CallStackEdge {
-  id: string;
-  source: string;
-  target: string;
-  type: string;
-  animated: boolean;
-}
+// CallStackEdge is the same as VisualiserEdge
+interface CallStackEdge extends VisualiserEdge {}
 
 interface CallStackState {
   // State
-  nodes: CallStackNode[];
-  edges: CallStackEdge[];
   noOfElementsInStack: number;
   nodeBelow: string;
   
@@ -48,7 +55,7 @@ const initialBaseNode: CallStackNode = {
   id: "base",
   type: "callStackBase",
   position: { x: 0, y: 0 },
-  data: { isConnectable: false },
+  data: { isConnectable: false, title: "Call Stack" },
   zIndex: 10,
   draggable: true,
   connectable: false,
@@ -58,19 +65,20 @@ export const useCallStackStore = create<CallStackState>()(
   devtools(
     (set, get) => ({
       // Initial state
-      nodes: [initialBaseNode],
-      edges: [],
       noOfElementsInStack: 0,
       nodeBelow: "base",
 
       // Actions
       push: (functionName = "Function") => {
-        const { noOfElementsInStack, nodeBelow, nodes, edges } = get();
+        const { noOfElementsInStack, nodeBelow } = get();
         const newCount = noOfElementsInStack + 1;
         const newNodeId = `node-${newCount}`;
         
+        // Get visualiser store instance
+        const visualiserStore = useVisualiserStore.getState();
+        
         // Find base node position
-        const baseNode = nodes.find(node => node.id === "base");
+        const baseNode = visualiserStore.getNode("base");
         const basePosition = baseNode ? baseNode.position : { x: 0, y: 0 };
         
         // Create new node
@@ -92,20 +100,16 @@ export const useCallStackStore = create<CallStackState>()(
           connectable: false,
         };
 
-        // Update existing nodes (set previous top to not top)
-        const updatedNodes = nodes.map((node) => {
-          if (node.id === nodeBelow && nodeBelow !== "base") {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                isTop: false,
-                isBottom: true,
-              },
-            };
-          }
-          return node;
-        });
+        // Update previous top node (set previous top to not top)
+        if (nodeBelow !== "base") {
+          visualiserStore.updateNodeData(nodeBelow, {
+            isTop: false,
+            isBottom: true,
+          });
+        }
+
+        // Add new node to visualiser
+        visualiserStore.addNode(newNode);
 
         // Create new edge
         const newEdge: CallStackEdge = {
@@ -116,16 +120,17 @@ export const useCallStackStore = create<CallStackState>()(
           animated: true,
         };
 
+        // Add edge to visualiser
+        visualiserStore.addEdge(newEdge);
+
         set({
-          nodes: [...updatedNodes, newNode],
-          edges: [...edges, newEdge],
           noOfElementsInStack: newCount,
           nodeBelow: newNodeId,
         });
       },
 
       pop: () => {
-        const { noOfElementsInStack, nodes, edges } = get();
+        const { noOfElementsInStack } = get();
         
         if (noOfElementsInStack <= 0) {
           console.warn("Cannot pop from empty stack");
@@ -136,50 +141,51 @@ export const useCallStackStore = create<CallStackState>()(
         const nodeToRemove = `node-${noOfElementsInStack}`;
         const newTopNodeId = newCount > 0 ? `node-${newCount}` : "base";
 
-        // Remove the top node
-        const filteredNodes = nodes.filter(node => node.id !== nodeToRemove);
+        // Get visualiser store instance
+        const visualiserStore = useVisualiserStore.getState();
+
+        // Remove the top node from visualiser
+        visualiserStore.removeNode(nodeToRemove);
         
         // Update the new top node
-        const updatedNodes = filteredNodes.map(node => {
-          if (node.id === newTopNodeId && newTopNodeId !== "base") {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                isTop: true,
-                isBottom: false,
-              },
-            };
-          }
-          return node;
-        });
-
-        // Remove edges connected to the removed node
-        const filteredEdges = edges.filter(edge => 
-          edge.source !== nodeToRemove && edge.target !== nodeToRemove
-        );
+        if (newTopNodeId !== "base") {
+          visualiserStore.updateNodeData(newTopNodeId, {
+            isTop: true,
+            isBottom: false,
+          });
+        }
 
         set({
-          nodes: updatedNodes,
-          edges: filteredEdges,
           noOfElementsInStack: newCount,
           nodeBelow: newTopNodeId,
         });
       },
 
       clearStack: () => {
+        // Get visualiser store instance
+        const visualiserStore = useVisualiserStore.getState();
+        
+        // Clear all nodes except base
+        visualiserStore.clearAll();
+        
+        // Re-add base node
+        visualiserStore.addNode(initialBaseNode);
+
         set({
-          nodes: [initialBaseNode],
-          edges: [],
           noOfElementsInStack: 0,
           nodeBelow: "base",
         });
       },
 
       initializeStack: () => {
+        // Get visualiser store instance
+        const visualiserStore = useVisualiserStore.getState();
+        
+        // Clear all and add base node
+        visualiserStore.clearAll();
+        visualiserStore.addNode(initialBaseNode);
+
         set({
-          nodes: [initialBaseNode],
-          edges: [],
           noOfElementsInStack: 0,
           nodeBelow: "base",
         });
@@ -187,14 +193,16 @@ export const useCallStackStore = create<CallStackState>()(
 
       // Getters
       getTopNode: () => {
-        const { nodes, noOfElementsInStack } = get();
+        const { noOfElementsInStack } = get();
         if (noOfElementsInStack === 0) return null;
-        return nodes.find(node => node.id === `node-${noOfElementsInStack}`) || null;
+        
+        const visualiserStore = useVisualiserStore.getState();
+        return visualiserStore.getNode(`node-${noOfElementsInStack}`) as CallStackNode || null;
       },
 
       getBottomNode: () => {
-        const { nodes } = get();
-        return nodes.find(node => node.id === "base") || null;
+        const visualiserStore = useVisualiserStore.getState();
+        return visualiserStore.getNode("base") as CallStackNode || null;
       },
 
       isEmpty: () => {

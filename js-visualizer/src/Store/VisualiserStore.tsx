@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import type { Node, Edge, Connection } from '@xyflow/react';
 
-interface VisualiserNode extends Node {
+export interface VisualiserNode extends Node {
   id: string;
   type: string;
   position: { x: number; y: number };
@@ -12,7 +12,7 @@ interface VisualiserNode extends Node {
   zIndex: number;
 }
 
-interface VisualiserEdge extends Edge {
+export interface VisualiserEdge extends Edge {
   id: string;
   source: string;
   target: string;
@@ -20,10 +20,7 @@ interface VisualiserEdge extends Edge {
   animated: boolean;
 }
 
-function StartCallStackSequence()
-{
-  
-}
+
 interface VisualiserState {
   // State
   nodes: VisualiserNode[];

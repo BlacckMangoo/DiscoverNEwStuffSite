@@ -10,34 +10,41 @@ import { useCallback, useEffect } from "react";
 
 import "@xyflow/react/dist/style.css";
 import CallStackNode from "./CallStackNode";
-import CallStackBase from "./CallStackBase";
+import BaseNode from "./BaseNode";
+import { useVisualiserStore } from "../Store/VisualiserStore";
 import { useCallStackStore } from "../Store/CallStackStore";
-
+import { useGlobalExecutionContextStore } from "../Store/GlobalExecutionContextStore";
 
 
 const nodeTypes = {
   callStackNode: CallStackNode,
-  callStackBase: CallStackBase,
+  callStackBase: BaseNode,
 };
 
 
 
 
 function VisualizerWindow() {
-  // Get state and operations from CallStackStore
+  
+  // Get state from VisualiserStore for nodes and edges
   const { 
     nodes, 
     edges, 
-    push, 
-    pop, 
-    clearStack,
-    noOfElementsInStack,
-    isEmpty 
-  } = useCallStackStore();
+  } = useVisualiserStore();
+
+  // Get actions from stores
+  const { initializeStack } = useCallStackStore();
+  const { addGECStructure } = useGlobalExecutionContextStore();
 
   // Use react-flow state hooks for UI interactions
   const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState(nodes);
   const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState(edges);
+
+  // Add base nodes on mount
+  useEffect(() => {
+    initializeStack();
+    addGECStructure();
+  }, [initializeStack, addGECStructure]);
 
   // Sync store state with react-flow state
   useEffect(() => {

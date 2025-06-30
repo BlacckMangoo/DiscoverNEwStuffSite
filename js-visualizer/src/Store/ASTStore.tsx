@@ -1,6 +1,16 @@
 import { create } from "zustand";
 import * as acorn from 'acorn';
 
+/**
+ * AST Store - Global State Management
+ * 
+ * This store handles:
+ * - Abstract Syntax Tree (AST) generation and storage from source code
+ * - Call stack operation logs (push/pop sequences for function calls)
+ * - AST parsing using Acorn parser with ECMAScript compatibility
+ * - Code analysis and execution simulation for visualizer
+ */
+
 // Parse code to AST using Acorn
 function ParseCodeToAST(code: string) {
     try {
