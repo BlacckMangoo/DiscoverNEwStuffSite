@@ -2,14 +2,12 @@ import { useRef } from "react";
 import Editor from "@monaco-editor/react";
 import type { Monaco } from "@monaco-editor/react";
 import { useCodeEditorStore } from "@/Store/CodeEditorStore";
-import { useASTStore } from "@/Store/ASTStore";
 import CodeEditorController from "./CodeEditorController";
 
 function CodeEditor() {
   const editorRef = useRef(null);
 
-  const { code, setCode, currentWindowMode } = useCodeEditorStore();
-  const { generatedAst } = useASTStore();
+  const { code, setCode,currentWindowMode } = useCodeEditorStore();
 
   const handleEditorDidMount = (editor: any, monaco: Monaco) => {
     editorRef.current = editor;
@@ -69,7 +67,7 @@ function CodeEditor() {
       {/* Editor Area */}
 
       {
-        currentWindowMode === "codeEditor" ?
+        currentWindowMode == "codeEditor" ?
         <div className="flex-1 relative overflow-hidden">
           <Editor
             height="100%"
@@ -108,20 +106,12 @@ function CodeEditor() {
             }}
           />
         </div> :
-        <div className="flex-1 bg-zinc-950 p-4 overflow-auto">
-          <div className="text-zinc-300 text-sm font-mono">
-            <h3 className="text-zinc-100 text-base font-semibold mb-4">Abstract Syntax Tree</h3>
-            {generatedAst ? (
-              <pre className="whitespace-pre-wrap text-xs leading-relaxed bg-zinc-900/50 p-4 rounded-lg border border-zinc-800/60">
-                {JSON.stringify(generatedAst, null, 2)}
-              </pre>
-            ) : (
-              <div className="text-zinc-500 italic text-center py-8">
-                No AST generated yet. Run some code to see the AST.
-              </div>
-            )}
-          </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-zinc-500 text-sm">Code Editor is hidden</div>
         </div>
+
+
+    
       }
 
       {/* Footer */}

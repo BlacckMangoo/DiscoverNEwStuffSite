@@ -12,8 +12,6 @@ import "@xyflow/react/dist/style.css";
 import CallStackNode from "./CallStackNode";
 import BaseNode from "./BaseNode";
 import { useVisualiserStore } from "../Store/VisualiserStore";
-import { useCallStackStore } from "../Store/CallStackStore";
-import { useGlobalExecutionContextStore } from "../Store/GlobalExecutionContextStore";
 
 
 const nodeTypes = {
@@ -25,32 +23,30 @@ const nodeTypes = {
 
 
 function VisualizerWindow() {
+
+
+
+
+
   
-  // Get state from VisualiserStore for nodes and edges
+  // Get state from VisualiserStore (centralized node/edge storage)
   const { 
-    nodes, 
-    edges, 
+    nodes: visualiserNodes, 
+    edges: visualiserEdges, 
   } = useVisualiserStore();
 
-  // Get actions from stores
-  const { initializeStack } = useCallStackStore();
-  const { addGECStructure } = useGlobalExecutionContextStore();
+  // Get CallStack state for any additional logic needed (if needed later)
+  // const callStackStore = useCallStackStore();
 
   // Use react-flow state hooks for UI interactions
-  const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState(nodes);
-  const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState(edges);
-
-  // Add base nodes on mount
-  useEffect(() => {
-    initializeStack();
-    addGECStructure();
-  }, [initializeStack, addGECStructure]);
+  const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState(visualiserNodes);
+  const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState(visualiserEdges);
 
   // Sync store state with react-flow state
   useEffect(() => {
-    setReactFlowNodes(nodes);
-    setReactFlowEdges(edges);
-  }, [nodes, edges, setReactFlowNodes, setReactFlowEdges]);
+    setReactFlowNodes(visualiserNodes);
+    setReactFlowEdges(visualiserEdges);
+  }, [visualiserNodes, visualiserEdges, setReactFlowNodes, setReactFlowEdges]);
 
   const onConnect = useCallback(
     (params: Connection) => {

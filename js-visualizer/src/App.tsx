@@ -1,10 +1,23 @@
 
+import { useEffect } from 'react'
 import './App.css'
 import Navbar from './components/Navbar'
 import CodeEditor from './components/CodeEditor'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable'
 import VisualizerWindow from './components/VisuliserWindow'
+import { useCallStackStore } from './Store/CallStackStore'
+import { useGlobalExecutionContextStore } from './Store/GlobalExecutionContextStore'
+
 function App() {
+  const { initializeStack } = useCallStackStore();
+  const { addGECStructure } = useGlobalExecutionContextStore();
+
+  // Initialize the visualization on app start
+  useEffect(() => {
+    initializeStack();
+    addGECStructure();
+  }, [initializeStack, addGECStructure]);
+
   return (
 
       <div className="h-screen w-screen flex flex-col bg-zinc-950 overflow-hidden">

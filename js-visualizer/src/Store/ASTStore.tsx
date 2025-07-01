@@ -151,6 +151,7 @@ interface AbstractSyntaxTreeState {
     CallStackOperationLog: CallStackOperation[];
     GenerateAndStoreAst: (code: string) => CallStackOperation[];
     logAst: () => void;
+    clearAst: () => void;
 }
 
 // AST Store
@@ -182,5 +183,7 @@ export const useASTStore = create<AbstractSyntaxTreeState>()((set, get) => ({
         const state = get();
         console.log('📋 Current AST:', state.generatedAst);
         console.log('📋 Operations:', state.CallStackOperationLog);
-    }
+    },
+
+    clearAst: () => set({ generatedAst: null, CallStackOperationLog: []})
 }));

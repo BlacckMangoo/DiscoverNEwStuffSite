@@ -32,10 +32,8 @@ interface GlobalExecutionContextState {
   addGECStructure: () => void;
   removeGECStructure: () => void;
   
-  // Getters
-  getGECNode: () => GECNode | null;
-  getMemoryNode: () => GECNode | null;
-  getCodePhaseNode: () => GECNode | null;
+  
+
 }
 
 // GEC Base Node
@@ -144,21 +142,7 @@ export const useGlobalExecutionContextStore = create<GlobalExecutionContextState
         console.log('🗑️ GEC structure removed');
       },
 
-      // Getters
-      getGECNode: () => {
-        const visualiserStore = useVisualiserStore.getState();
-        return visualiserStore.getNode("gec-base") as GECNode || null;
-      },
-
-      getMemoryNode: () => {
-        const visualiserStore = useVisualiserStore.getState();
-        return visualiserStore.getNode("gec-memory") as GECNode || null;
-      },
-
-      getCodePhaseNode: () => {
-        const visualiserStore = useVisualiserStore.getState();
-        return visualiserStore.getNode("gec-code-phase") as GECNode || null;
-      },
+    
     }),
     {
       name: 'global-execution-context-store',

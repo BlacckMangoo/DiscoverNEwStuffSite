@@ -1,10 +1,12 @@
-
-import { LuChevronRight, LuChevronLeft, LuCirclePlay, LuPlay  } from "react-icons/lu";
+import { LuChevronRight, LuChevronLeft, LuPlay  } from "react-icons/lu";
+import { RiResetLeftFill } from "react-icons/ri";
 import { FaPause } from "react-icons/fa";
 import { useCallStackStore } from '@/Store/CallStackStore';
 import { useCodeEditorStore } from '@/Store/CodeEditorStore';
 import { useASTStore } from "@/Store/ASTStore";
-
+import { useGlobalExecutionContextStore } from "@/Store/GlobalExecutionContextStore";
+import { useVisualiserExecutionQueueStore } from "@/Store/VisualiserExecutionQueue";
+import { useVisualiserStore } from "@/Store/VisualiserStore";
 
 
 
@@ -14,33 +16,50 @@ import { useASTStore } from "@/Store/ASTStore";
 function CodeEditorController() {
 
     // get states from stores
-
-     const { GenerateAndStoreAst, logAst } = useASTStore();
-      const { push, pop } = useCallStackStore();
-      const { code, changeMode, currentMode,currentWindowMode,changeWindowMode } = useCodeEditorStore();
+     const { GenerateAndStoreAst, logAst, clearAst } = useASTStore();
+     const { enqueuePush, enqueuePop } = useCallStackStore();
+     const { code, changeMode, currentWindowMode, changeWindowMode } = useCodeEditorStore();
+     const { addGECStructure } = useGlobalExecutionContextStore();
+     const { 
+       start, 
+       pause, 
+       step, 
+       reset, 
+       clearQueue, 
+       executionState, 
+       canStepForward
+     } = useVisualiserExecutionQueueStore();
 
       // Handle play/pause functionality
       const handlePlayPause = async () => {
-
-        
-        if (currentMode === 'run') {
+        if (executionState === 'running') {
           // If already running, pause it
+          pause();
           changeMode?.('pause');
+        } else if (executionState === 'paused') {
+          // If paused, resume
+          await start();
+          changeMode?.('run');
         } else {
-          // If paused or default, start running
+          // If idle, start new execution
           changeMode?.('run');
           const sourceCode = code;
 
           try {
+            // Clear previous queue
+            clearQueue();
+            
             // Generate AST and get operations directly
             const operationLog = GenerateAndStoreAst(sourceCode);
             logAst();
             
             console.log('📋 Operation Log:', operationLog);
             
-            // Start the call stack sequence with returned operations
+            // Enqueue all operations
             if (operationLog && operationLog.length > 0) {
-              await startCallStackSequence(operationLog);
+              enqueueCallStackOperations(operationLog);
+              // Start execution
+              await start();
             } else {
               console.warn('⚠️ No call stack operations found');
             }
@@ -50,38 +69,57 @@ function CodeEditorController() {
         }
       };
 
-      // ✅ Create proper async function for call stack sequence
-      const startCallStackSequence = async (operationLog: any[]) => {
-        console.log('🚀 Starting call stack sequence:', operationLog);
+      // Convert operations to commands and enqueue them
+      const enqueueCallStackOperations = (operationLog: any[]) => {
+        console.log('🚀 Enqueuing call stack operations:', operationLog);
         
-        for (let i = 0; i < operationLog.length; i++) {
-          const operation = operationLog[i];
-          
+        for (const operation of operationLog) {
           if (operation.type === 'push') {
-            console.log(`⬆️ PUSH: ${operation.functionName}`);
-            await push(operation.functionName);
+            console.log(`⬆️ Enqueuing PUSH: ${operation.functionName}`);
+            enqueuePush(operation.functionName);
           } else if (operation.type === 'pop') {
-            console.log(`⬇️ POP: ${operation.functionName}`);
-            await pop();
-          }
-          
-          // ✅ Proper delay between operations
-          if (i < operationLog.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(`⬇️ Enqueuing POP: ${operation.functionName}`);
+            enqueuePop();
           }
         }
       };
-
   const handleStepBack = () => {
-    console.log('Step back');
+    console.log('Step back - Not implemented yet');
+    // TODO: Implement step back functionality
     changeMode?.('step');
-
   };
 
-  const handleStepForward = () => {
+  const handleStepForward = async () => {
     console.log('Step forward');
     changeMode?.('step');
- 
+    
+    if (canStepForward()) {
+      await step();
+    } else {
+      console.warn('No more steps to execute');
+    }
+  };
+
+  const handleReset = () => {
+    changeMode?.('default');
+    changeWindowMode?.('codeEditor');
+    
+    // Reset execution queue
+    reset();
+    
+    // Clear ALL visual nodes and edges first (complete reset)
+    const visualiserStore = useVisualiserStore.getState();
+    visualiserStore.clearAll();
+    
+    // Clear AST
+    clearAst();
+    
+    // Re-initialize to default state
+    const callStackStore = useCallStackStore.getState();
+    callStackStore.initializeStack();  // This will add the base node back
+    addGECStructure();  // This will add GEC structure back
+    
+    console.log('🔄 Complete reset to default state');
   };
 
     
@@ -103,10 +141,26 @@ function CodeEditorController() {
          </button>
           }
 
+
+         
+
+
+
     
  
 
           <div className='ml-auto flex items-center space-x-2'>
+
+            
+          
+          {/* Reset button */}
+          <button
+            onClick={handleReset}
+            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all duration-200 group"
+            title="Reset"
+          >
+            <RiResetLeftFill className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
           {/* Step Back Button */}
           <button
             onClick={handleStepBack}
@@ -116,8 +170,8 @@ function CodeEditorController() {
             <LuChevronLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
 
-          {/* Play/Pause Button - Conditional Rendering */}
-          {currentMode === 'run' ? (
+          {/* Play/Pause Button - Based on execution state */}
+          {executionState === 'running' ? (
             <button
               onClick={handlePlayPause}
               className="p-2 text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 rounded-lg transition-all duration-200 group"
@@ -129,7 +183,7 @@ function CodeEditorController() {
             <button
               onClick={handlePlayPause}
               className="p-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-all duration-200 group"
-              title="Play"
+              title={executionState === 'paused' ? 'Resume' : 'Play'}
             >
               <LuPlay className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
